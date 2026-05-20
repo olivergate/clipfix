@@ -93,21 +93,56 @@ Exit codes:
 
 ## Bind to a macOS hotkey
 
+The goal: **select text → press ⌘⌥C → ⌘V pastes the cleaned version.**
+
+The Shortcut does three things in one keystroke: sends ⌘C to copy your
+current selection, waits a beat for the clipboard to update, then runs
+`clipfix` to clean it in place. After that your clipboard holds the
+cleaned text, ready for a normal ⌘V paste.
+
+### Setup
+
 1. Open **Shortcuts.app** (built into macOS).
-2. **File → New Shortcut**, name it `Clean Clipboard`.
+2. **File → New Shortcut**, name it `Clean Copy`.
 3. Add one action: **Run Shell Script**.
    - Shell: `/bin/zsh`
-   - Pass Input: **Ignored** (we read the clipboard directly)
-   - Script: `/usr/local/bin/clipfix` (or wherever you symlinked it)
+   - Pass Input: **Ignored**
+   - Script:
+     ```bash
+     osascript -e 'tell application "System Events" to keystroke "c" using {command down}'
+     sleep 0.15
+     /usr/local/bin/clipfix
+     ```
+     (Adjust the `clipfix` path if you symlinked it somewhere else.)
 4. In the shortcut's info panel (ⓘ icon, top-right), under **Details**:
    - Tick **Use as Quick Action**.
-   - Set **Keyboard Shortcut** to `⌃⌥⌘V` (or whatever you prefer).
+   - Set **Keyboard Shortcut** to `⌘⌥C`.
 
-Now: copy any messy snippet, press the hotkey, paste. Done.
+### Grant Accessibility permission
 
-If the hotkey doesn't fire, check
-**System Settings → Privacy & Security → Accessibility** and make sure
-Shortcuts is allowed.
+Sending ⌘C from a script requires Accessibility permission. The first
+time you trigger the hotkey, macOS will prompt — accept it. If it
+doesn't prompt, or you accidentally denied:
+
+**System Settings → Privacy & Security → Accessibility** → enable
+**Shortcuts** (and, if listed separately, **osascript**).
+
+### About the ⌘⌥C hotkey
+
+`⌘⌥C` collides with **Finder's "Copy as Pathname"** when Finder is the
+frontmost app. When you've got text selected in any normal text context
+(browser, editor, terminal, chat), Finder isn't focused, so the
+Shortcut wins. But if you find yourself reaching for "Copy as Pathname"
+in Finder, pick a different hotkey — `⌃⌥⌘C` (three modifiers) is
+collision-free.
+
+### Pure-clipboard mode (no selection)
+
+If you prefer the older workflow — copy with ⌘C yourself, then clean
+the clipboard explicitly — make a second Shortcut whose script is just
+`/usr/local/bin/clipfix` (no `osascript`/`sleep`). Bind it to a
+different hotkey. Useful when you've already copied something earlier
+and just want to clean what's on the clipboard now.
 
 ## Development
 
