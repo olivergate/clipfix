@@ -1,6 +1,6 @@
 # clipfix
 
-[![test](https://github.com/USERNAME/clipfix/actions/workflows/test.yml/badge.svg)](https://github.com/USERNAME/clipfix/actions/workflows/test.yml)
+[![test](https://github.com/olivergate/clipfix/actions/workflows/test.yml/badge.svg)](https://github.com/olivergate/clipfix/actions/workflows/test.yml)
 
 > A tiny clipboard hygiene tool. Strips leading whitespace from copied code
 > blocks and joins URLs that got soft-wrapped onto multiple lines.
@@ -53,7 +53,7 @@ determines whether a line continues a URL — not the post-dedent text.
 Clone the repo and symlink the script onto your `$PATH`:
 
 ```bash
-git clone https://github.com/USERNAME/clipfix.git
+git clone https://github.com/olivergate/clipfix.git
 cd clipfix
 ln -s "$PWD/clipfix" /usr/local/bin/clipfix
 ```
@@ -114,7 +114,7 @@ Shortcuts is allowed.
 Tests use `pytest` and the standard library only.
 
 ```bash
-git clone https://github.com/USERNAME/clipfix.git
+git clone https://github.com/olivergate/clipfix.git
 cd clipfix
 python3 -m venv .venv
 source .venv/bin/activate
