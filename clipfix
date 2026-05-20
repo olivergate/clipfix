@@ -1,0 +1,85 @@
+#!/usr/bin/env python3
+"""
+clipfix — clean up text copied out of terminal / chat output.
+
+Two fixes, applied in order:
+  1. Join URLs that were soft-wrapped across lines (newline mid-token).
+  2. Strip the common leading whitespace from every line (textwrap.dedent).
+
+Usage:
+  clipfix                # macOS: read clipboard, write clipboard
+  pbpaste | clipfix      # stdin -> stdout (works anywhere)
+  clipfix < file.txt     # file -> stdout
+
+Exit codes:
+  0  success
+  1  no input available (empty clipboard / empty stdin)
+  2  platform unsupported in clipboard mode (no pbpaste/pbcopy)
+"""
+from __future__ import annotations
+
+import re
+import subprocess
+import sys
+import textwrap
+
+# Characters that may legally appear in a URL (RFC 3986 unreserved + reserved +
+# percent-encoding). Whitespace is intentionally excluded — that's the signal
+# that a URL has ended.
+_URL_CHARS = r"[A-Za-z0-9\-._~:/?#\[\]@!$&'()*+,;=%]"
+
+# Match a URL that has at least one soft-wrap: http(s)://... \n ...
+# The lookahead for url-chars right after \n means we only join when the next
+# line continues with no leading whitespace — i.e. a true mid-token wrap.
+_URL_WRAP_RE = re.compile(rf"https?://{_URL_CHARS}+(?:\n{_URL_CHARS}+)+")
+
+
+def unwrap_urls(text: str) -> str:
+    """Join URLs broken across lines by terminal/chat soft-wrapping."""
+    return _URL_WRAP_RE.sub(lambda m: m.group(0).replace("\n", ""), text)
+
+
+def clean(text: str) -> str:
+    """Unwrap URLs first (preserves indentation signal), then dedent."""
+    return textwrap.dedent(unwrap_urls(text))
+
+
+def _read_clipboard() -> str:
+    return subprocess.check_output(["pbpaste"], text=True)
+
+
+def _write_clipboard(text: str) -> None:
+    subprocess.run(["pbcopy"], input=text, text=True, check=True)
+
+
+def main() -> int:
+    # If stdin has actual data, process it as a stream. Otherwise — whether
+    # stdin is an interactive TTY or just an empty pipe (as it is when a
+    # macOS Shortcut runs us with "Pass Input: ignored") — fall back to the
+    # clipboard.
+    stdin_data = "" if sys.stdin.isatty() else sys.stdin.read()
+    if stdin_data:
+        sys.stdout.write(clean(stdin_data))
+        return 0
+
+    try:
+        raw = _read_clipboard()
+    except FileNotFoundError:
+        sys.stderr.write(
+            "clipfix: pbpaste/pbcopy not found (macOS only in clipboard mode).\n"
+            "        Pipe input via stdin instead: pbpaste | clipfix | pbcopy\n"
+        )
+        return 2
+    if not raw:
+        sys.stderr.write("clipfix: clipboard is empty\n")
+        return 1
+    result = clean(raw)
+    _write_clipboard(result)
+    sys.stderr.write(
+        f"clipfix: cleaned clipboard ({len(raw)} -> {len(result)} chars)\n"
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
