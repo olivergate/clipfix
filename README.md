@@ -108,12 +108,15 @@ Exit codes:
 
 ## Bind to a macOS hotkey
 
-The goal: **select text → press ⌘⌥C → ⌘V pastes the cleaned version.**
+The workflow is a three-keystroke chord:
 
-The Shortcut does three things in one keystroke: sends ⌘C to copy your
-current selection, waits a beat for the clipboard to update, then runs
-`clipfix` to clean it in place. After that your clipboard holds the
-cleaned text, ready for a normal ⌘V paste.
+1. Select text → **⌘C** (copy as normal — clipboard now holds the messy text)
+2. **⌘⌥C** (`clipfix` cleans the clipboard in place — no visible feedback)
+3. **⌘V** in your target app (pastes the cleaned text)
+
+The middle step is what `clipfix` adds. No keystroke simulation, no
+Accessibility permission, no Services menu — it just transforms whatever
+is on your clipboard.
 
 ### Setup
 
@@ -121,27 +124,17 @@ cleaned text, ready for a normal ⌘V paste.
 2. **File → New Shortcut**, name it `Clean Copy`.
 3. Add one action: **Run Shell Script**.
    - Shell: `/bin/zsh`
-   - Pass Input: **Ignored**
+   - Pass Input: **to stdin** (the default — doesn't matter, we ignore stdin)
    - Script (replace `<your-home>` with your actual home directory —
      Shortcuts doesn't reliably expand `~`):
-     ```bash
-     osascript -e 'tell application "System Events" to keystroke "c" using {command down}'
-     sleep 0.15
+     ```
      /Users/<your-home>/.local/bin/clipfix
      ```
      If you symlinked into `/usr/local/bin` instead, use that path.
-4. In the shortcut's info panel (ⓘ icon, top-right), under **Details**:
-   - Tick **Use as Quick Action**.
-   - Set **Keyboard Shortcut** to `⌘⌥C`.
-
-### Grant Accessibility permission
-
-Sending ⌘C from a script requires Accessibility permission. The first
-time you trigger the hotkey, macOS will prompt — accept it. If it
-doesn't prompt, or you accidentally denied:
-
-**System Settings → Privacy & Security → Accessibility** → enable
-**Shortcuts** (and, if listed separately, **osascript**).
+4. In the shortcut's info panel (ⓘ icon, top-right):
+   - Leave "Use as Quick Action" **off**.
+   - Set **Keyboard Shortcut** to **⌘⌥C**.
+5. Close the editor (⌘W) — Shortcuts saves automatically.
 
 ### About the ⌘⌥C hotkey
 
@@ -152,15 +145,23 @@ Shortcut wins. But if you find yourself reaching for "Copy as Pathname"
 in Finder, pick a different hotkey — `⌃⌥⌘C` (three modifiers) is
 collision-free.
 
-### Pure-clipboard mode (no selection)
+### Why not one-keystroke?
 
-If you prefer the older workflow — copy with ⌘C yourself, then clean
-the clipboard explicitly — make a second Shortcut whose script is just
-the absolute path to `clipfix` (e.g.
-`/Users/<your-home>/.local/bin/clipfix`), with no `osascript` or
-`sleep`. Bind it to a different hotkey. Useful when you've already
-copied something earlier and just want to clean what's on the clipboard
-now.
+The obvious dream is `select → ⌘⌥C → ⌘V` (skip the manual ⌘C). It's
+achievable on macOS in two ways and both have real costs:
+
+- **Simulate ⌘C via `osascript`.** Requires Accessibility permission for
+  `osascript`, which macOS will prompt for the first time and is fiddly
+  to grant correctly.
+- **Use Shortcuts.app's "Receive from Quick Actions".** Should pass the
+  selection to the Shortcut as input, but in practice the integration is
+  unreliable — Quick Actions don't always register, and a hotkey bound
+  in the info panel doesn't always invoke the Shortcut in Quick Action
+  context.
+
+The three-keystroke flow above sidesteps both problems. It works in
+every app, needs no permissions, and the cost is one extra chord you
+were already pressing (⌘C is muscle memory anyway).
 
 ## Development
 
