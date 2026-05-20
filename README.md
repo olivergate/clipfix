@@ -50,20 +50,35 @@ determines whether a line continues a URL — not the post-dedent text.
 
 ## Install
 
-Clone the repo and symlink the script onto your `$PATH`:
+Clone the repo and symlink the script into `~/.local/bin` (a standard
+user-bin location that's on `$PATH` on most modern setups — no sudo
+required):
 
 ```bash
 git clone https://github.com/olivergate/clipfix.git
 cd clipfix
-ln -s "$PWD/clipfix" /usr/local/bin/clipfix
+mkdir -p ~/.local/bin
+ln -sf "$PWD/clipfix" ~/.local/bin/clipfix
 ```
 
-Or, if `/usr/local/bin` isn't writable / on your path:
+Verify it's on your `$PATH`:
 
 ```bash
-mkdir -p ~/bin
-ln -s "$PWD/clipfix" ~/bin/clipfix
-# then make sure ~/bin is on your PATH
+which clipfix    # should print ~/.local/bin/clipfix
+```
+
+If `which clipfix` finds nothing, add `~/.local/bin` to your shell's
+PATH — for zsh, append this to `~/.zshrc`:
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+Prefer a system-wide install? Symlink into `/usr/local/bin` instead
+(needs sudo on most setups):
+
+```bash
+sudo ln -sf "$PWD/clipfix" /usr/local/bin/clipfix
 ```
 
 Requires Python 3.10+ (ships with recent macOS). No third-party
@@ -107,13 +122,14 @@ cleaned text, ready for a normal ⌘V paste.
 3. Add one action: **Run Shell Script**.
    - Shell: `/bin/zsh`
    - Pass Input: **Ignored**
-   - Script:
+   - Script (replace `<your-home>` with your actual home directory —
+     Shortcuts doesn't reliably expand `~`):
      ```bash
      osascript -e 'tell application "System Events" to keystroke "c" using {command down}'
      sleep 0.15
-     /usr/local/bin/clipfix
+     /Users/<your-home>/.local/bin/clipfix
      ```
-     (Adjust the `clipfix` path if you symlinked it somewhere else.)
+     If you symlinked into `/usr/local/bin` instead, use that path.
 4. In the shortcut's info panel (ⓘ icon, top-right), under **Details**:
    - Tick **Use as Quick Action**.
    - Set **Keyboard Shortcut** to `⌘⌥C`.
@@ -140,9 +156,11 @@ collision-free.
 
 If you prefer the older workflow — copy with ⌘C yourself, then clean
 the clipboard explicitly — make a second Shortcut whose script is just
-`/usr/local/bin/clipfix` (no `osascript`/`sleep`). Bind it to a
-different hotkey. Useful when you've already copied something earlier
-and just want to clean what's on the clipboard now.
+the absolute path to `clipfix` (e.g.
+`/Users/<your-home>/.local/bin/clipfix`), with no `osascript` or
+`sleep`. Bind it to a different hotkey. Useful when you've already
+copied something earlier and just want to clean what's on the clipboard
+now.
 
 ## Development
 
